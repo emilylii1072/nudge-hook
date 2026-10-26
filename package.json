@@ -1,0 +1,12 @@
+{
+	"name": "nudge-hook",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"description": "Claude Code configured so that a nudger checks how actively you prompt.",
+	"engines": { "node": ">=20" },
+	"scripts": {
+		"test": "node --test",
+		"export": "node tools/export-csv.mjs"
+	}
+}

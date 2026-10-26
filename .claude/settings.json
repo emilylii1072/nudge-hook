@@ -1,0 +1,31 @@
+{
+	"hooks": {
+		"UserPromptSubmit": [
+			{
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node \"$CLAUDE_PROJECT_DIR/hooks/user-prompt-submit.mjs\"",
+						"timeout": 20
+					}
+				]
+			}
+		],
+		"Stop": [
+			{
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node \"$CLAUDE_PROJECT_DIR/hooks/stop.mjs\"",
+						"timeout": 5
+					}
+				]
+			}
+		]
+	},
+	"statusLine": {
+		"type": "command",
+		"command": "node \"$CLAUDE_PROJECT_DIR/hooks/statusline.mjs\"",
+		"refreshInterval": 30
+	}
+}
