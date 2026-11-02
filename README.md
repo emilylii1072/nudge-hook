@@ -11,6 +11,10 @@ Each message you send is scored from 0 to 3 for how much thinking of your own it
 - **A popup for silence.** If you send nothing for 5 minutes, a popup suggests telling Claude what you think should happen next. Time while Claude is working does not count.
 - **The status line.** It shows your overall average and your last two scores, for example `Nudge: engagement 1.7 / 3 over 4 messages | last 2: 2, 1`.
 
+## The /prompts command
+
+Type `/prompts` at any time to pick a sentence starter. You choose a kind (counterfactual reasoning, comprehension, problem identification or steering), then a starter, and it goes into your prompt box with `[brackets]` for you to fill in. Type `/prompts list` to print every starter without choosing one.
+
 ## Install
 
 In a Claude Code terminal session:

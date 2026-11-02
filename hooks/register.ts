@@ -168,6 +168,10 @@ export const register: Register = (on, options) => {
       name: 'nudge-export',
       description: 'Write every scored prompt, reply and nudge to nudge-events.jsonl',
     })
+    await $.command.register({
+      name: 'prompts',
+      description: 'Pick a sentence starter and put it in your prompt box (/prompts list shows them all)',
+    })
     showStatus($, scores)
 
     // Hooks only run on events, so a timer is what notices the clock.
@@ -262,6 +266,28 @@ export const register: Register = (on, options) => {
       if (e.answer.trim()) await log($, scores, { kind: 'reply', action: e.reason, text: e.answer.slice(0, MAX_REPLY_CHARS) })
     }
     return next(e)
+  })
+
+  on('command.run', { command: 'prompts' }, async ($, e) => {
+    if (e.args.trim() === 'list') {
+      const lines = (Object.keys(FILLERS) as FillerGroup[]).flatMap(g => [
+        `${GROUP_LABELS[g]}:`,
+        ...FILLERS[g].map(f => `  • ${f}`),
+        '',
+      ])
+      return { text: lines.join('\n') }
+    }
+    const starter = await chooseFiller($)
+    if (starter === null) return { text: 'No sentence starter chosen.' }
+    // Running a command clears the prompt box, so fill it once that has happened.
+    $.clock.after(300, async () => {
+      try {
+        await $.prompt.fill({ text: starter })
+      } catch {
+        // the box could not take it
+      }
+    })
+    return { text: 'Sentence starter added to your prompt box. Fill in the [brackets] and send it.' }
   })
 
   on('command.run', { command: 'nudge-export' }, async $ => {
