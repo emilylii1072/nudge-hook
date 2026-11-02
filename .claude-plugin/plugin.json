@@ -1,0 +1,24 @@
+{
+  "name": "nudge",
+  "version": "0.1.0",
+  "description": "Scores each prompt you send on the ICAP scale and nudges you, with a popup, when you are not engaging with Claude's work.",
+  "author": {
+    "name": "emilylii1072"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/emilylii1072/nudge-hook",
+  "userConfig": {
+    "scorerModel": {
+      "type": "string",
+      "title": "Scorer model",
+      "description": "Model that scores your prompts with the ICAP rubric (an alias or a full model id).",
+      "default": "claude-opus-5-5"
+    },
+    "silenceMinutes": {
+      "type": "number",
+      "title": "Silence nudge (minutes)",
+      "description": "Minutes without a message before you are nudged to tell Claude what you think should happen next.",
+      "default": 5
+    }
+  }
+}

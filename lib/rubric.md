@@ -64,23 +64,14 @@ Indicators:
 
 A message must refer to or depend on the content of `previous_agent_reply` to score 3. If there is no previous reply, the highest possible score is 2.
 
-## Decision procedure
-
-Follow these steps in order and stop at the first step that applies.
-
-1. If the message contains only acceptance, continuation, thanks, or pasted material with nothing added, score 0.
-2. If the message is only questions or requests to explain existing information, with no ideas of the participant's own, score 1.
-3. If the message contains the participant's own idea, decision, hypothesis, or requirement, but does not respond to the content of the assistant's previous reply, score 2.
-4. If the message contains the participant's own thinking and responds directly to the content of the assistant's previous reply by challenging, correcting, or extending it, score 3.
-
-When two scores seem equally likely, choose the lower one. Do not give credit for effort that is not visible in the text.
+When two scores seem equally likely, choose the higher one. Do not give credit for effort that is not visible in the text.
 
 ## Edge cases
 
 - A message that combines acceptance with new content, such as "yes, but use a 70:30 split", is scored on the new content, so it scores 2 or 3.
 - A directive without reasoning, such as "build the random forest model", adds a small instruction but no thinking of the participant's own. Score it 1 if it is a plain request that follows from the assistant's suggestion, and 2 only if the participant chose the approach themselves.
 - A question that proposes an answer, such as "should we use a decision tree because the data is small?", is constructive (2), not active (1).
-- A request for the assistant to give its opinion, such as "what do you think?" on its own, is active (1).
+- A request for the assistant to give its opinion on a particular subject, such as "what do you think about [subject]?" is interactive (3).
 - Messages that refer to files or settings by name do not score higher for that reason alone. Look for the thinking behind them.
 
 ## Output format

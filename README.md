@@ -1,57 +1,53 @@
-# Nudge Hook
+# Nudge
 
-A folder that sets up Claude Code so that a nudger checks how actively you prompt. Open Claude Code in this folder and the nudger is on. There is nothing to install.
+Nudge is a Claude Code plugin that checks how much of your own thinking goes into each message you send to Claude, and nudges you when you are only accepting its work.
 
 ## What you will see
 
-Each message you send is scored from 0 to 3 for how much of your own thinking it contains (the ICAP scale: passive, active, constructive, interactive). The score is used in three ways.
+Each message you send is scored from 0 to 3 for how much thinking of your own it contains. The scale is ICAP: 0 passive, 1 active, 2 constructive, 3 interactive. The scorer reads your new message together with up to your last 5 exchanges with Claude, so it can tell whether you are repeating yourself or responding to something Claude said earlier. Repeating a question or point you already made scores 0.
 
-- **A warning before sending.** If your message is a simple acceptance, such as "ok" or "continue", and your messages so far average below 1.5, the message is held back with a short note. To send it as it is, submit the same message again. To change it, edit it and submit.
-- **A nudge after sending.** If your last two messages average below 1.5, a short note suggests adding your own idea, a reason for a choice, or something you disagree with.
-- **A nudge for silence.** If you send nothing for 5 minutes, the status line at the bottom suggests telling Claude what you think should happen next. Time while Claude is working does not count.
+- **A dialog before sending.** If your message is a simple acceptance, such as "ok" or "continue", and your messages so far average below 1.5, the message is held back. You can send it as it is, choose a sentence starter, or write your own. Choosing a sentence starter first asks for a kind (counterfactual reasoning, comprehension, problem identification or steering), then shows the starters of that kind. The one you pick goes into your prompt box with `[brackets]` for you to fill in.
+- **A popup after sending.** If your last two messages average below 1.5, a popup in the top right suggests sentence starters.
+- **A popup for silence.** If you send nothing for 5 minutes, a popup suggests telling Claude what you think should happen next. Time while Claude is working does not count.
+- **The status line.** It shows your overall average and your last two scores, for example `Nudge: engagement 1.7 / 3 over 4 messages | last 2: 2, 1`.
 
-The status line also shows your average score.
+## Install
 
-A message that mostly repeats Claude's last reply is scored as pasted, which scores 0 when you add nothing to it.
+In a Claude Code terminal session:
 
-## Set up
+```
+/plugin install nudge --marketplace emilylii1072/nudge-hook
+```
 
-You need [Claude Code](https://claude.com/claude-code) and Node.js 20 or newer.
+Answer `y` to add the marketplace, then pick a scope. The plugin is active as soon as it is installed. This repository is private, so you need to be invited on GitHub, and your computer needs a git credential for github.com (an SSH key, or run `gh auth login` and then `gh auth setup-git`).
 
-1. Copy `.env.example` to `.env` and put your Anthropic API key in it. The key is only used to score your messages. Without it, nothing is scored and nothing is blocked.
-2. Open a terminal in this folder and run `claude`.
-3. When Claude Code asks whether to trust this folder, say yes. The hooks only load in a trusted folder.
+The plugin uses Claude Code's plugin API, which is in early access. If it stops working after a Claude Code update, tell the person who gave it to you.
+
+## Settings
+
+Both settings are in the plugin's section of `/config`.
+
+- **Scorer model.** The model that scores your messages. The default is `claude-opus-5-5`.
+- **Silence nudge (minutes).** How long before the silence popup. The default is 5.
 
 ## What is sent and saved
 
-- **Sent:** each message you type, with Claude's last reply for context, goes to the Anthropic API to be scored.
-- **Saved on your computer:** every scored message, warning and nudge goes in `.nudge/events.jsonl`, with the score, the reason for it, and your averages at that moment. Run `node tools/export-csv.mjs > prompt_events.csv` for a CSV.
+- **Sent for scoring:** each message you type, with the last 5 exchanges for context, goes to the scorer model through your own Claude Code session. No separate API key is needed, and the calls count toward your own usage.
+- **Saved on your computer:** every scored message, Claude reply, warning and nudge is kept in the plugin's local store, with its score and the reason for it. Nothing is uploaded anywhere.
+- **Export:** run `/nudge-export` to write everything to `nudge-events.jsonl` in the folder where you started Claude Code.
 
 ## It never gets in your way
 
-If scoring fails for any reason (no key, no network, a slow reply, an error), your message goes through as if the nudger were not there. Slash commands such as `/clear` are never scored.
+If scoring fails for any reason, your message goes through as if the plugin were not there. Slash commands are never scored.
 
-## How it works
+## Files
 
-The folder's `.claude/settings.json` registers three hooks.
+- `hooks/register.ts` registers the hooks and shows the dialogs and popups.
+- `hooks/engagement.ts` holds the rules for when to warn or nudge.
+- `hooks/rubric.ts` holds the scoring rubric.
+- `hooks/fillers.ts` holds the sentence starters.
+- `lib/rubric.md` is the original rubric, which the analysis scripts read. `rubric_with_history.md` is the rubric the plugin uses, and `hooks/rubric.ts` is generated from it. `sentence_fillers.md` is the list that `hooks/fillers.ts` copies.
 
-| Hook | File | Job |
-|---|---|---|
-| `UserPromptSubmit` | `hooks/user-prompt-submit.mjs` | Scores the message, then holds it back with a warning or lets it through with a nudge. |
-| `Stop` | `hooks/stop.mjs` | Notes when Claude finishes, so working time is not counted as silence. |
-| status line | `hooks/statusline.mjs` | Shows your average, and the silence nudge after 5 minutes. |
+## License
 
-The rules and thresholds are in `lib/engagement.mjs`, and the scoring rubric is `lib/rubric.md`. Change `ENGAGEMENT_THRESHOLD` or `SILENCE_MS` there to change when nudges appear. Set `NUDGE_SCORER_MODEL` in `.env` to use a different model for scoring.
-
-## Things to know
-
-- **No dialog.** A hook cannot show an "Edit / Send anyway" dialog, so the warning works by holding the message back once. Your original text is shown in the note so you can copy it.
-- **Pasting.** A hook sees only text, so it cannot tell that you pasted. It can tell when your message repeats Claude's last reply, which is the case that matters here.
-- **One status line.** This folder sets Claude Code's status line. If you use your own status line, this folder's replaces it while you work here.
-- **Each session starts fresh.** Your average is per session. The log keeps every session.
-
-## Checks
-
-```sh
-npm test
-```
+MIT. See `LICENSE`.
