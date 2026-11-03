@@ -6,9 +6,10 @@ Nudge is a Claude Code plugin that checks how much of your own thinking goes int
 
 Each message you send is scored from 0 to 3 for how much thinking of your own it contains. The scale is ICAP: 0 passive, 1 active, 2 constructive, 3 interactive. The scorer reads your new message together with up to your last 5 exchanges with Claude, so it can tell whether you are repeating yourself or responding to something Claude said earlier. Repeating a question or point you already made scores 0.
 
-- **A dialog before sending.** If your message is a simple acceptance, such as "ok" or "continue", and your messages so far average below 1.5, the message is held back. You can send it as it is, choose a sentence starter, or write your own. Choosing a sentence starter first asks for a kind (counterfactual reasoning, comprehension, problem identification or steering), then shows the starters of that kind. The one you pick goes into your prompt box with `[brackets]` for you to fill in.
+- **A dialog before sending.** If your message is a simple acceptance, such as "ok" or "continue", and your messages so far average below 1.5, the message is held back. The dialog shows a randomly chosen sentence starter. You can send the message as it is, or choose to write your own, in which case the starter is put in your prompt box with `[brackets]` for you to fill in. (The older dialog where you picked the kind of starter is switched off in `hooks/register.ts`, and `/prompts` still has it.)
 - **A popup after sending.** If your last two messages average below 1.5, a popup in the top right suggests sentence starters.
 - **A popup for silence.** If you send nothing for 5 minutes, a popup suggests telling Claude what you think should happen next. Time while Claude is working does not count.
+- **A question while Claude works.** If Claude has been working for more than a minute on your message, a dialog asks "While Claude works: what is the task you are doing?" so you are not just waiting. Type your answer in the dialog's Other box. It is saved in the log as a `question` event.
 - **The status line.** It shows your overall average and your last two scores, for example `Nudge: engagement 1.7 / 3 over 4 messages | last 2: 2, 1`.
 
 ## The /prompts command

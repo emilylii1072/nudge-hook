@@ -10,13 +10,15 @@ import {
   shouldWarnBeforeSend,
 } from './engagement'
 import type { Scored } from './engagement'
-import { FILLERS, GROUP_LABELS, pickFillers } from './fillers'
+import { FILLERS, GROUP_LABELS, pickFillers, randomFiller } from './fillers'
 import type { FillerGroup } from './fillers'
 import { RUBRIC } from './rubric'
 
 const SEND = 'Send as it is'
-const CHOOSE = 'Choose a sentence starter'
+// const CHOOSE = 'Choose a sentence starter' // selection dialog, switched off: a random starter is used instead
 const EDIT = 'Write my own'
+const TASK_QUESTION = 'While Claude works: what is the task you are doing?'
+const WORKING_QUESTION_MS = 60_000 // how long Claude works before the question is asked
 const MAX_REPLY_CHARS = 4000
 const OLD_REPLY_CHARS = 1500
 const WINDOW = 5 // exchanges the scorer sees
@@ -25,7 +27,7 @@ const MAX_EVENTS = 1500
 type Row = {
   created: string
   session: string
-  kind: 'prompt' | 'reply' | 'warning' | 'nudge'
+  kind: 'prompt' | 'reply' | 'warning' | 'nudge' | 'question'
   action: string
   text: string
   score: number | null
@@ -107,7 +109,7 @@ async function score(
       model,
       system: RUBRIC,
       prompt: JSON.stringify({ history, prompt, pasted }),
-      maxTokens: 800,
+      maxTokens: 1000,
       timeoutMs: 12_000,
     })
     if (!r.isAnswered) return null
@@ -141,6 +143,9 @@ export const register: Register = (on, options) => {
   const exchanges: Exchange[] = []
   let quietSince = 0
   let working = false
+  let workingSince = 0 // when the current turn started, while working
+  let askedFor = -1 // the workingSince the task question was already asked for
+  let asking = false
   let silenceShownFor = -1
 
   on('session.start', async ($, e, next) => {
@@ -178,6 +183,23 @@ export const register: Register = (on, options) => {
     $.clock.every(30_000, async () => {
       try {
         const now = await $.clock.now()
+
+        // While Claude works on a longer task, ask the person a question instead of leaving them to wait.
+        if (working && !asking && askedFor !== workingSince && now - workingSince >= WORKING_QUESTION_MS) {
+          asking = true
+          askedFor = workingSince
+          try {
+            // Free text comes back through the dialog's "Other".
+            const answer = await $.ui.ask(TASK_QUESTION, { header: 'Question', options: ['Not sure yet', 'Skip'] })
+            if (answer !== 'Skip') await log($, scores, { kind: 'question', action: 'what_is_the_task', text: answer })
+          } catch {
+            // dismissed
+          } finally {
+            asking = false
+          }
+          return
+        }
+
         if (working || silenceShownFor === quietSince || !shouldNudgeForSilence(now, quietSince, silenceMs)) return
         silenceShownFor = quietSince
         const starters = pickFillers(['steering', 'counterfactual', 'comprehension'], 3, scores.length)
@@ -204,6 +226,7 @@ export const register: Register = (on, options) => {
     // The person is active either way, so the silence clock restarts.
     quietSince = now
     working = true
+    workingSince = now
 
     if (!scored) return next(e)
 
@@ -211,24 +234,27 @@ export const register: Register = (on, options) => {
     if (shouldWarnBeforeSend(scores, scored.score)) {
       const overall = (average(scores) ?? 0).toFixed(1)
       await log($, scores, { kind: 'warning', action: 'shown', text: prompt, ...scored, echo })
+      // A random sentence starter, put in the prompt box when the message is held back.
+      const starter = randomFiller()
       let choice: string
       try {
         choice = await $.ui.ask(
-          `This message looks like a simple acceptance, and your messages so far average ${overall} out of 3 for engagement. Choose a sentence starter to fill in with your own words, or send it as it is.`,
-          { header: 'Nudge', options: [SEND, CHOOSE, EDIT] },
+          `This message looks like a simple acceptance, and your messages so far average ${overall} out of 3 for engagement. Send it as it is, or write your own. A sentence starter will be put in your prompt box: ${starter}`,
+          // { header: 'Nudge', options: [SEND, CHOOSE, EDIT] }, // with the selection dialog
+          { header: 'Nudge', options: [SEND, EDIT] },
         )
       } catch {
         choice = EDIT // dismissed
       }
-      let starter: string | null = null
-      if (choice === CHOOSE) {
-        starter = await chooseFiller($)
-        if (starter === null) choice = EDIT
-      }
+      // let starter: string | null = null
+      // if (choice === CHOOSE) {
+      //   starter = await chooseFiller($)
+      //   if (starter === null) choice = EDIT
+      // }
       if (choice !== SEND) {
         working = false
-        // A drop clears the prompt box, so put the person's text back once it has.
-        const text = starter ?? e.text
+        // A drop clears the prompt box, so fill in the starter once it has.
+        const text = starter
         $.clock.after(300, async () => {
           try {
             await $.prompt.fill({ text })
@@ -263,6 +289,7 @@ export const register: Register = (on, options) => {
       if (exchanges.length > 0) exchanges[exchanges.length - 1].assistant = e.answer
       quietSince = await $.clock.now() // working time does not count as silence
       working = false
+      workingSince = 0
       if (e.answer.trim()) await log($, scores, { kind: 'reply', action: e.reason, text: e.answer.slice(0, MAX_REPLY_CHARS) })
     }
     return next(e)

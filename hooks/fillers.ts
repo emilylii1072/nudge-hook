@@ -26,6 +26,12 @@ export const GROUP_LABELS: Record<FillerGroup, string> = {
   steering: 'Steering',
 }
 
+/** One starter picked at random from all the groups. */
+export function randomFiller(): string {
+  const all = ([] as string[]).concat(...Object.values(FILLERS))
+  return all[Math.floor(Math.random() * all.length)]
+}
+
 /** n starters, one per group in the order given, rotating through each group as `turn` grows. */
 export function pickFillers(groups: readonly FillerGroup[], n: number, turn: number): string[] {
   const picked: string[] = []
