@@ -1,6 +1,6 @@
 {
   "name": "nudge",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Scores each prompt you send on the ICAP scale and nudges you, with a popup, when you are not engaging with Claude's work.",
   "author": {
     "name": "emilylii1072"
